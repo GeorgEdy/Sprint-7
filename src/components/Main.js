@@ -1,18 +1,66 @@
 require('normalize.css');
 require('styles/App.css');
 
-
 import React from 'react';
-import User from './User';
-import ActiveUsers from './ActiveUsers';
-import ChatMessage from './ChatMessage';
 import ChatInput from './ChatInput';
+import ChatMessage from './ChatMessage';
 import ChatLog from './ChatLog';
+import ActiveUsers from './ActiveUsers';
+import User from './User';
+const API = {
+  base: 'http://192.168.1.114:9000/api/',
+
+  fetchUsers: function () {
+    var url = this.base + 'participants';
+    return fetch(url).then(function (response) {
+      return response.json()
+    });
+  },
+
+  fetchUser: function (currentUser) {
+    var url = this.base + 'participants';
+    var attr = {
+      method: 'post',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(currentUser)
+    };
+    return fetch(url, attr)
+      .then(function (response) {
+        return response.json();
+      });
+  },
+
+  fetchMessages: function (currentUser) {
+    var url = this.base + 'messages/' + currentUser.id;
+
+    return fetch(url).then(function (response) {
+      return response.json()
+    });
+  },
+
+  sendMessage: function (body, currentUser) {
+    var url = this.base + 'messages/' + currentUser.id;
+    var attr = {
+      method: 'post',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({body: body})
+    };
+
+    return fetch(url, attr)
+      .then(function (response) {
+        return response.json();
+      });
+  }
+};
 
 var AppComponent = React.createClass({
-
   getInitialState: function () {
-
     return {
       activeUsers: [],
 
@@ -30,55 +78,31 @@ var AppComponent = React.createClass({
 
 
   fetchUsers: function () {
-    var url = 'http://server.godev.ro:8081/api/participants';
-    fetch(url).then(function(response) {
-      return response.json()
-    }).then(function(json) {
-      this.setState({
-        activeUsers: json
-      });
-    }.bind(this));
-  },
-
-  fetchUser: function () {
-    var url = 'http://server.godev.ro:8081/api/participants';
-    return fetch(url,
-      {
-        method: 'post',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fb_id: '1307233471',
-          first_name: 'Vlad',
-          last_name: 'Goran'
-        })
-      }
-    )
-      .then(function(response) {
-        return response.json();
-
-      }).then(function(json) {
+    API.fetchUsers()
+      .then(function (json) {
         this.setState({
-          currentUser: json
+          activeUsers: json
         });
       }.bind(this));
   },
 
+  fetchUser: function () {
+    return API.fetchUser(this.state.currentUser)
+      .then(function (json) {
+        this.setState({currentUser: json});
+      }.bind(this));
+  },
+
   fetchMessages: function () {
-    var url = 'http://server.godev.ro:8081/api/messages/' + this.state.currentUser.id;
-    fetch(url).then(function(response) {
-      return response.json()
-    }).then(function(json) {
-      this.setState({
-        messageLog: json
-      });
-    }.bind(this));
+    API.fetchMessages(this.state.currentUser)
+      .then(function (log) {
+        this.setState({
+          messageLog: log
+        });
+      }.bind(this));
   },
 
   componentWillMount: function () {
-
     this.fetchUsers();
     setInterval(this.fetchUsers, 3000);
 
@@ -88,8 +112,11 @@ var AppComponent = React.createClass({
     }.bind(this));
   },
 
-  onSubmit: function () {
-    // call API...
+  onSubmit: function (body) {
+    API.sendMessage(body, this.state.currentUser)
+      .then(function (json) {
+        console.log(json);
+      }.bind(this));
   },
 
   render: function () {
@@ -118,5 +145,6 @@ var AppComponent = React.createClass({
     );
   }
 });
+
 
 export default AppComponent;

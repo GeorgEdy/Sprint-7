@@ -14,7 +14,7 @@ var ActiveUsers = React.createClass({
   render: function () {
 
     var activeUsers = this.props.list.map(function (user) {
-      return (<user key={user.id} firstName={user.first_name} lastName={user.last_name} />);
+      return (<User key={user.id} firstName={user.first_name} lastName={user.last_name} />);
     });
 
     return (
